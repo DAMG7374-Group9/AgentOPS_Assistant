@@ -58,6 +58,11 @@ class Settings(BaseSettings, extra="ignore"):
     @model_validator(mode="after")
     def validator(cls, values: "Settings") -> "Settings":
         values.POSTGRES_URI = values.POSTGRES_CONN_STRING
+        values.SNOWFLAKE_URI =  (
+            f"snowflake://{values.SNOWFLAKE_DB_USER}:{values.SNOWFLAKE_DB_PASSWORD}@{values.SNOWFLAKE_DB_ACCOUNT}/"
+            f"{values.SNOWFLAKE_DB_DATABASE}/{values.SNOWFLAKE_DB_SCHEMA}?warehouse={values.SNOWFLAKE_DB_WAREHOUSE}&role={values.SNOWFLAKE_DB_ROLE}"
+        )
+
         return values
 
 

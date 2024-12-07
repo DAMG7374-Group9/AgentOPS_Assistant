@@ -5,13 +5,14 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import scoped_session, sessionmaker, Session
 
-from backend.config import settings
+from backend.config import (
+    settings,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class Base(DeclarativeBase):
-    # https://docs.sqlalchemy.org/en/14/orm/extensions/asyncio.html#preventing-implicit-io-when-using-asyncsession
     __mapper_args__ = {"eager_defaults": True}
 
 
@@ -22,9 +23,12 @@ class DatabaseSession:
         if cls._instance is None:
             logger.info("Created new database session object")
             cls._instance = super().__new__(cls)
-            cls._instance.db_engine = create_engine(settings.POSTGRES_URI)
+
+            cls._instance.db_engine = create_engine(settings.SNOWFLAKE_URI)
             cls._instance.session_maker = scoped_session(
-                sessionmaker(autocommit=False, autoflush=True, bind=cls._instance.db_engine)
+                sessionmaker(
+                    autocommit=False, autoflush=True, bind=cls._instance.db_engine
+                )
             )
         return cls._instance
 
