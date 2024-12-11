@@ -16,14 +16,13 @@ class GraphState(TypedDict):
         generation: LLM generation
         resources: A list of resources that were used to generate the response.
         steps: A list of steps that were taken to generate the response.
-        web_search_performed: A list of web searches that were performed during the execution of the graph.
-        paper_search_performed: A list of research paper searches that were performed during the execution of the graph.
     """
     prompt: str
     generation: str
     resources: list
     steps: list[str]
     perform_web_search: bool
+    chat_session_id: int
 
 
 class Steps(StrEnum):

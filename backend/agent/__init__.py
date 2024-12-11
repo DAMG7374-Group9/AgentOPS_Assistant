@@ -59,15 +59,6 @@ def compile_graph():
             "irrelevant": "web_search"
         }
     )
-    # workflow.add_edge("paper_search", "paper_search_evaluate")
-    # workflow.add_conditional_edges(
-    #     "paper_search_evaluate",
-    #     graph_edges.paper_search_decide_to_generate,
-    #     {
-    #         "relevant": "generate",
-    #         "irrelevant": "web_search"
-    #     }
-    # )
     workflow.add_edge("web_search", "generate")
     workflow.add_edge("generate", END)
     return workflow.compile()

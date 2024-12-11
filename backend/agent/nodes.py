@@ -7,6 +7,8 @@ from langchain_core.language_models import BaseChatModel
 from backend.agent.vector_store import Retriever
 from backend.agent.generate_chain import create_generate_chain
 from backend.agent.graph import Steps, GraphState
+from backend.database.chat_sessions import create_chat_session
+from backend.database.messages import create_message, MessageSenderEnum
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +62,15 @@ class GraphNodes:
         generation = self.generate_chain.invoke({"resources": '\n\n'.join(f"{index + 1}. {item}" for index, item in enumerate(resources)), "prompt": prompt})
         state["generation"] = generation
         state["steps"].append(Steps.LLM_GENERATION.value)
+
+        tools_used = ["vector_search"]
+        if state.get("perform_web_search", False):
+            tools_used.append("web_search")
+
+        create_message(content=prompt, chat_session_id=state["chat_session_id"], references=[], sender=MessageSenderEnum.USER,
+                       tools_used=tools_used)
+        create_message(content=generation, chat_session_id=state["chat_session_id"], references=[r for r in resources],
+                       sender=MessageSenderEnum.SYSTEM, tools_used=tools_used)
         return state
 
     def _base_grade_documents(self, state: GraphState, previous_state: str):
