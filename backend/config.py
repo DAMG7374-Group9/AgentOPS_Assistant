@@ -53,6 +53,9 @@ class Settings(BaseSettings, extra="ignore"):
     LOG_MAX_BYTES: int = 2000000  # Default to 2MB
     LOG_BACKUP_COUNT: int = 10
 
+    # Hugging Face
+    HF_TOKEN: str
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @model_validator(mode="after")
