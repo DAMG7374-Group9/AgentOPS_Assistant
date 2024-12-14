@@ -145,3 +145,26 @@ class GraphNodes:
         # Re-write question
         better_question = self.question_rewriter.invoke({"input": question})
         return {"documents": documents, "input": better_question}
+
+    def route_question(self, state):
+        """
+        Route question to web search or RAG.
+
+        Args:
+            state (dict): The current graph state
+
+        Returns:
+            str: Next node to call
+        """
+
+        print("---ROUTE QUESTION---")
+        question = state["question"]
+        source = self.llm.invoke(
+            [SystemMessage(content=router_system_prompt)] + [HumanMessage(content=f"{question}")]
+        )
+        if source.datasource == "web_search":
+            print("---ROUTE QUESTION TO WEB SEARCH---")
+            return "web_search"
+        elif source.datasource == "vectorstore":
+            print("---ROUTE QUESTION TO RAG---")
+        return "vectorstore"
