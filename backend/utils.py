@@ -4,6 +4,7 @@ from functools import lru_cache
 
 import boto3
 from botocore.exceptions import ClientError
+from fastapi import UploadFile
 from langchain_community.retrievers import ArxivRetriever
 from langchain_community.tools import TavilySearchResults
 from langchain_openai import OpenAIEmbeddings
@@ -12,10 +13,9 @@ from passlib.context import CryptContext
 
 from backend.config import settings
 
-LOCAL_EXTRACTS_DIRECTORY = os.path.join("resources", "extracts")
 BASE_RESOURCES_PATH = os.path.join("resources")
-SCRAPED_RESOURCES_PATH = os.path.join(BASE_RESOURCES_PATH, "scraped")
-CACHED_RESOURCES_PATH = os.path.join(BASE_RESOURCES_PATH, "cached")
+SRC_AUDIO_RESOURCES_PATH = os.path.join(BASE_RESOURCES_PATH, "src_audio")
+TRANSCRIPTIONS_RESOURCES_PATH = os.path.join(BASE_RESOURCES_PATH, "transcriptions")
 
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,10 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def ensure_directory_exists(directory):
-    os.makedirs(directory, exist_ok=True)
+def create_resource_dirs():
+    os.makedirs(SRC_AUDIO_RESOURCES_PATH, exist_ok=True)
+    os.makedirs(TRANSCRIPTIONS_RESOURCES_PATH, exist_ok=True)
+
 
 
 def get_s3_client():
@@ -87,5 +89,16 @@ def get_tavily_web_search_tool():
     return TavilySearchResults(max_results=5, search_depth="advanced", include_answer=True)
 
 
-def get_arxiv_search_tool():
-    return ArxivRetriever(load_max_docs=2, get_full_documents=False)
+async def write_audio_to_file(contents: UploadFile, filename: str):
+    file_path = os.path.join(SRC_AUDIO_RESOURCES_PATH, filename + ".audio")
+    with open(file_path, "wb") as f:
+        audio_data = await contents.read()
+        f.write(audio_data)
+    return file_path
+
+
+async def write_transcription_to_file(contents: str, filename: str):
+    file_path = os.path.join(TRANSCRIPTIONS_RESOURCES_PATH, filename + ".txt")
+    with open(file_path, "wb") as f:
+        f.write(contents.encode("utf-8"))
+    return file_path

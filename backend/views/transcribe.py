@@ -1,15 +1,20 @@
 import os
 import tempfile
+from idlelib.pyparse import trans
 from pathlib import Path
 
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, Depends
 from starlette.responses import JSONResponse
 
-from backend.schemas.transcribe import AudioTranscribeRequest
+from backend.database.transcriptions import create_transcription_record, update_transcription_text, \
+    get_transcription_by_id
+from backend.schemas.transcribe import AudioTranscribeRequest, AudioTranscribeResponse
 from pyannote.audio import Pipeline
 
 from backend.config import settings
-from backend.services.transcribe import upload_file_to_s3, get_whisper_model
+from backend.services.auth_bearer import get_current_user_id
+from backend.services.transcribe import upload_file_to_s3, get_whisper_model, generate_personalized_summary
+from backend.utils import write_audio_to_file, write_transcription_to_file
 
 transcribe_router = APIRouter(prefix="/transcribe", tags=["transcribe"])
 
@@ -39,61 +44,42 @@ except Exception as e:
     print(f"Failed to load diarization pipeline: {e}")
 
 @transcribe_router.post("/upload-audio/")
-async def process_audio(file: UploadFile = File(...)):
+async def process_audio(file: UploadFile = File(...), user_id: int = Depends(get_current_user_id)):
     if diarization_pipeline is None:
         return JSONResponse(
             {"error": "Diarization pipeline unavailable. Please check your Hugging Face token."},
             status_code=500,
         )
+    transcription_record = create_transcription_record(user_id=user_id)
 
-    try:
-        # Save uploaded file temporarily
-        with tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix) as temp_audio:
-            audio_data = await file.read()
-            temp_audio.write(audio_data)
-            audio_path = temp_audio.name
+    audio_file_path = await write_audio_to_file(file, str(transcription_record.id))
+    whisper_model = get_whisper_model()
 
-        # Upload the original audio file to S3
-        s3_audio_key = f"audio_files/{file.filename}"
-        s3_audio_url = upload_file_to_s3(audio_path, s3_audio_key)
+    # Transcribe audio using Whisper
+    transcription_output = whisper_model.transcribe(audio_file_path)["segments"]
 
-        whisper_model = get_whisper_model()
+    # Perform diarization using Pyannote pipeline
+    diarization = diarization_pipeline(audio_file_path)
 
-        # Transcribe audio using Whisper
-        transcription = whisper_model.transcribe(audio_path)["segments"]
+    # Combine transcription and diarization
+    diarized_output = []
+    for segment in transcription_output:
+        start_time = segment["start"]
+        end_time = segment["end"]
+        text = segment["text"]
+        speaker = "Unknown"
+        for turn, _, speaker_id in diarization.itertracks(yield_label=True):
+            if turn.start <= start_time <= turn.end:
+                speaker = f"{speaker_id}"
+        diarized_output.append(f"[{start_time:.2f} - {end_time:.2f}] {speaker}: {text}")
 
-        # Perform diarization using Pyannote pipeline
-        diarization = diarization_pipeline(audio_path)
+    # Save diarized transcription to a file
+    diarized_text = "\n".join(diarized_output)
+    diarized_file_path = await write_transcription_to_file(diarized_text, str(transcription_record.id))
+    personalized_summary = generate_personalized_summary(transcription_path=diarized_file_path, user_id=user_id)
 
-        # Combine transcription and diarization
-        diarized_output = []
-        for segment in transcription:
-            start_time = segment["start"]
-            end_time = segment["end"]
-            text = segment["text"]
-            speaker = "Unknown"
-            for turn, _, speaker_id in diarization.itertracks(yield_label=True):
-                if turn.start <= start_time <= turn.end:
-                    speaker = f"{speaker_id}"
-            diarized_output.append(f"[{start_time:.2f} - {end_time:.2f}] {speaker}: {text}")
+    update_transcription_text(transcription_id=transcription_record.id, transcription_text=diarized_text, personalized_summary=personalized_summary)
 
-        # Save diarized transcription to a file
-        diarized_text = "\n".join(diarized_output)
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as temp_txt:
-            temp_txt.write(diarized_text.encode("utf-8"))
-            transcription_path = temp_txt.name
-
-        # Upload diarized transcription to S3
-        s3_transcription_key = f"transcriptions/{Path(file.filename).stem}_diarized.txt"
-        s3_transcription_url = upload_file_to_s3(transcription_path, s3_transcription_key)
-
-        # Clean up temporary files
-        os.remove(audio_path)
-        os.remove(transcription_path)
-
-        return {
-            "transcription": diarized_text
-        }
-
-    except Exception as e:
-        return JSONResponse({"error": str(e)}, status_code=500)
+    return AudioTranscribeResponse(
+        personalized_summary=personalized_summary, transcription_id=transcription_record.id
+    )

@@ -21,13 +21,13 @@ def get_refresh_token():
     raise ValueError("User not logged in!")
 
 
-def make_authenticated_request(endpoint, method="GET", data=None, params=None):
+def make_authenticated_request(endpoint, method="GET", data=None, params=None, files=None):
     token = get_access_token()
     headers = {"Authorization": f"Bearer {token}"}
     url = f"{settings.BACKEND_URI}/{endpoint}"
 
     if method == "POST":
-        response = requests.post(url, json=data, headers=headers, params=params)
+        response = requests.post(url, json=data, headers=headers, params=params, files=files)
     else:
         response = requests.get(url, headers=headers, params=params)
 

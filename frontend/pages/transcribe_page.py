@@ -3,6 +3,7 @@ import requests
 import os
 
 from frontend.config import settings
+from frontend.utils.auth import make_authenticated_request
 
 
 def transcribe():
@@ -26,18 +27,18 @@ def transcribe():
         with open(temp_file_path, "rb") as audio_file:
             files = {"file": audio_file}
             with st.spinner("Processing the audio file..."):
-                response = requests.post(f"{settings.BACKEND_URI}/transcribe/upload-audio/", files=files)
+                response = make_authenticated_request(
+                    endpoint="transcribe/upload-audio/",
+                    method="POST",
+                    files=files
+                )
+                st.session_state.transcription = response
+                st.success("Transcription completed!")
 
         # Clean up temporary files
         os.remove(temp_file_path)
 
-        # Display response
-        if response.status_code == 200:
-            result = response.json()
-            st.success("Transcription completed!")
-
-            st.divider()
-            st.write(response.json()["transcription"])
-        else:
-            st.error("An error occurred while processing the audio file.")
-            st.write(response.json()["error"])
+    st.divider()
+    if st.session_state.get("transcription") is not None:
+        st.subheader(f"Transcript summarized and customized to signed-in user:")
+        st.write(st.session_state.transcription["personalized_summary"])
