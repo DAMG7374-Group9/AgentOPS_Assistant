@@ -1,39 +1,54 @@
 import streamlit as st
+import requests
+
+from frontend.utils.auth import make_authenticated_request
 
 
 def chat_interface():
-    st.set_page_config(page_title="MeetPro Insights - Chat", layout="wide")
     st.title("💼 MeetPRO Insights: Employee Assistant")
+
+    # Initialize the session state for conversation history
+    if "conversation" not in st.session_state:
+        st.session_state.conversation = []
 
     col1, col2 = st.columns([2, 3])
 
     # Left Column: Email Inputs and Summary
     with col1:
         if "transcription" in st.session_state:
-            st.markdown(f"<div>{st.session_state.transcription["personalized_summary"]}</div>", unsafe_allow_html=True)
+            with open("transcript1.txt", "r", encoding="utf-8") as f:
+                transcript = f.read()
+            st.markdown(f"<div>{transcript}</div>", unsafe_allow_html=True)
 
     # Right Column: Chatbot
     with col2:
         st.subheader("🤖 Chat Assistant")
 
-        # TODO: Invoke LLM query API here
+        user_input = st.text_input("Ask a question about the meeting:")
+        if st.button("Send") and user_input.strip():
+            response = make_authenticated_request(
+                endpoint="/chat/query",
+                method="POST",
+                data={
+                    "model": "gpt-4o",
+                    "prompt": user_input,
+                    "transcription_id": 1,
+                    "chat_session_id": None,
+                    "transcript": transcript
+                }
+            )
+            answer = response["response"]
 
-        if "conversation" in st.session_state:
-            for message in st.session_state.get("chat_history", []):
-                if message["role"] == "user":
-                    st.markdown(f"**You:** {message['content']}")
-                elif message["role"] == "assistant":
-                    st.markdown(f"**Chatbot:** {message['content']}")
+            # Save the interaction in session state
+            st.session_state.conversation.append({"user": user_input, "bot": answer})
 
-            def handle_chat_input():
-                if st.session_state.chat_input:
-                    st.session_state.chat_history.append({"role": "user", "content": st.session_state.chat_input})
-                    response = st.session_state.conversation.run(st.session_state.chat_input)
-                    st.session_state.chat_history.append({"role": "assistant", "content": response})
-                    st.session_state.chat_input = ""
-
-            st.text_input("Ask a question to the chatbot:", key="chat_input", on_change=handle_chat_input)
-
+        # Display conversation history
+        st.markdown("### Conversation History")
+        for chat in st.session_state.conversation:
+            with st.chat_message("user"):
+                st.markdown(f"{chat['user']}")
+            with st.chat_message("assistant"):
+                st.markdown(f"{chat['bot']}")
 
 if __name__ == "__main__":
     chat_interface()

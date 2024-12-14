@@ -59,7 +59,7 @@ class GraphNodes:
         resources = state["resources"]
 
         # RAG generation
-        generation = self.generate_chain.invoke({"resources": '\n\n'.join(f"{index + 1}. {item}" for index, item in enumerate(resources)), "prompt": prompt})
+        generation = self.generate_chain.invoke({"resources": '\n\n'.join(f"{index + 1}. {item}" for index, item in enumerate(resources)), "prompt": prompt, "transcript": state["transcript"]})
         state["generation"] = generation
         state["steps"].append(Steps.LLM_GENERATION.value)
 
@@ -67,10 +67,10 @@ class GraphNodes:
         if state.get("perform_web_search", False):
             tools_used.append("web_search")
 
-        create_message(content=prompt, chat_session_id=state["chat_session_id"], references=[], sender=MessageSenderEnum.USER,
-                       tools_used=tools_used)
-        create_message(content=generation, chat_session_id=state["chat_session_id"], references=[r for r in resources],
-                       sender=MessageSenderEnum.SYSTEM, tools_used=tools_used)
+        # create_message(content=prompt, chat_session_id=state["chat_session_id"], references=[], sender=MessageSenderEnum.USER,
+        #                tools_used=tools_used)
+        # create_message(content=generation, chat_session_id=state["chat_session_id"], references=[r for r in resources],
+        #                sender=MessageSenderEnum.SYSTEM, tools_used=tools_used)
         return state
 
     def _base_grade_documents(self, state: GraphState, previous_state: str):
@@ -114,7 +114,7 @@ class GraphNodes:
         prompt = state["prompt"]
         web_results = self.web_search_tool.invoke({"query": prompt})
         state["resources"] = [
-           result["content"] for result in web_results
+           result for result in web_results
         ]
         state["steps"].append(Steps.WEB_SEARCH_RETRIEVAL.value)
         return state

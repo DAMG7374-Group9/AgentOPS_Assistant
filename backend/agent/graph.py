@@ -23,6 +23,7 @@ class GraphState(TypedDict):
     steps: list[str]
     perform_web_search: bool
     chat_session_id: int
+    transcript: str
 
 
 class Steps(StrEnum):

@@ -6,6 +6,7 @@ class QueryRequest(BaseModel):
     model: str
     transcription_id: int
     chat_session_id: int | None
+    transcript: str | None
 
 
 class QueryResponse(BaseModel):

@@ -11,17 +11,18 @@ def create_generate_chain(llm):
     Returns:
         A callable function that takes a context and a question as input and returns a string response.
     """
-    generate_template = """You are a knowledgeable assistant that generates answers to the question solely based on the documents provided in the context. Your goal is to use the provided context to answer the user's question clearly, and comprehensively.
+    generate_template = """You are a knowledgeable assistant that generates answers to the question based on the documents provided in the context and the transcript of the most recent meeting. Your goal is to use both the provided context and the transcript to answer the user's question clearly and comprehensively.
     
     Context:
     Documents: {resources}
+    Meeting Transcript: {transcript}
     
     Question:
     {prompt}
     
     Answer:  """
 
-    generate_prompt = PromptTemplate(template=generate_template, input_variables=["prompt", "resources"])
+    generate_prompt = PromptTemplate(template=generate_template, input_variables=["prompt", "resources", "transcript"])
 
     # Create the generate chain
     generate_chain = generate_prompt | llm | StrOutputParser()

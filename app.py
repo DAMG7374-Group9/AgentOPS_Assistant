@@ -1,7 +1,7 @@
 import streamlit as st
 from dotenv import load_dotenv
 
-from frontend.pages.chat_page import qa_interface
+from frontend.pages.chat_page import chat_interface
 from frontend.pages.transcribe_page import transcribe
 from frontend.pages.user_creation import create_user
 from frontend.pages.user_login import login
@@ -67,15 +67,15 @@ def main():
     )
     logout_page = st.Page(logout, title="Log Out", icon=":material/logout:")
     user_creation_page = st.Page(create_user, title="User Registration")
-    qa_page = st.Page(qa_interface, title="Question Answering", icon=":material/chat:")
+    qa_page = st.Page(chat_interface, title="Question Answering", icon=":material/chat:")
     transcribe_page = st.Page(transcribe, title="Transcribe Audio")
 
 
     if st.session_state.logged_in:
         pg = st.navigation(
             {
-                # "Question Answering & Reports": [qa_page],
                 "Transcribe Audio": [transcribe_page],
+                "Chat": [qa_page],
                 "Logout": [logout_page],
             }
         )

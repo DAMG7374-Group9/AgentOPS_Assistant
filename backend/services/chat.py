@@ -6,7 +6,7 @@ from backend.schemas.chat import QueryResponse, ChatHistoryResponse
 
 
 async def process_llm_query(
-    prompt: str, transcription_id: int, model_choice: str, chat_session_id: int | None, user_id: int
+    prompt: str, transcription_id: int, model_choice: str, chat_session_id: int | None, user_id: int, transcript: str | None
 ) -> QueryResponse:
     """Process a Q/A query and store the result"""
 
@@ -14,7 +14,7 @@ async def process_llm_query(
         chat_session = create_chat_session(user_id=user_id, transcription_id=transcription_id)
         chat_session_id = chat_session.id
 
-    response = agent_workflow.invoke({"prompt": prompt, "chat_session_id": chat_session_id})
+    response = agent_workflow.invoke({"prompt": prompt, "chat_session_id": chat_session_id, "transcript": transcript})
 
     print(response["steps"])
 
@@ -22,8 +22,8 @@ async def process_llm_query(
     if response.get("perform_web_search", False):
         tools_used.append("web_search")
 
-    update_last_message_time(chat_session_id)
-    return QueryResponse(response=response, chat_session_id=chat_session_id, references=[], tools_used=tools_used)
+    # update_last_message_time(chat_session_id)
+    return QueryResponse(response=response["generation"], chat_session_id=chat_session_id, references=[], tools_used=tools_used)
 
 
 async def get_chat_history(chat_session_id: int) -> ChatHistoryResponse:

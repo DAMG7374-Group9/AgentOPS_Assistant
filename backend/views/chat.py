@@ -16,7 +16,7 @@ async def process_query(request: QueryRequest, user_id: int = Depends(get_curren
     """
     return await process_llm_query(
         prompt=request.prompt, transcription_id=request.transcription_id, model_choice=request.model,
-        chat_session_id=request.chat_session_id, user_id=user_id
+        chat_session_id=request.chat_session_id, user_id=user_id, transcript=request.transcript
     )
 
 
