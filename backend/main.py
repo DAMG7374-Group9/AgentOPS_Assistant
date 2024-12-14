@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.config import settings
 from backend.database import db_session
 from backend.schemas import HealthSchema
+from backend.utils import create_resource_dirs
 from backend.views import central_router
 
 # Load logging configuration from file
@@ -29,6 +30,7 @@ app = FastAPI(title=settings.APP_TITLE, version=settings.APP_VERSION, lifespan=l
 # Include routers
 app.include_router(central_router)
 
+create_resource_dirs()
 origins = ["*"]
 
 app.add_middleware(

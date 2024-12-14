@@ -1,10 +1,10 @@
 from sqlalchemy import Boolean, Column, String, Integer, DateTime, Sequence
 
-from backend.database import Base
+from backend.database import Base, db_session
 
 
 class UserModel(Base):
-    __tablename__ = "users"
+    __tablename__ = "USERS"
     __table_args__ = {'schema': 'DB_AGENTOPS_CORE.DBT_CORE_SCHEMA'}
 
     # id_seq = Sequence("user_id_seq", schema='DB_AGENTOPS_CORE.DBT_CORE_SCHEMA')
@@ -18,3 +18,8 @@ class UserModel(Base):
     password_timestamp = Column(Integer, nullable=True)
     created_at = Column(DateTime, server_default="CURRENT_TIMESTAMP()", nullable=False)
     modified_at = Column(DateTime, server_default="CURRENT_TIMESTAMP()", nullable=False)
+
+
+def get_email_by_user_id(user_id: int) -> str:
+    with db_session() as session:
+        return session.query(UserModel.email).filter(UserModel.id == user_id).first()

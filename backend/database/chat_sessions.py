@@ -4,10 +4,8 @@ from backend.database import Base, db_session
 
 
 class ChatSessionModel(Base):
-    __tablename__ = 'chat_session'
+    __tablename__ = 'CHAT_SESSION'
     __table_args__ = {'schema': 'DB_AGENTOPS_CORE.DBT_CORE_SCHEMA'}
-
-    # chat_id_seq = Sequence("chat_session_id_seq", schema='DB_AGENTOPS_CORE.DBT_CORE_SCHEMA')
 
     id = Column(Integer, Sequence("chat_session_id_seq"), primary_key=True, autoincrement=True)
     user_id = Column(Integer, nullable=False)

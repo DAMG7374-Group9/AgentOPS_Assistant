@@ -8,18 +8,18 @@ from backend.agent.graph import GraphState
 from backend.agent.nodes import GraphNodes
 from backend.agent.vector_store import get_pinecone_vector_store, Retriever
 from backend.config import settings
-from backend.utils import get_tavily_web_search_tool, get_arxiv_search_tool
+from backend.utils import get_tavily_web_search_tool
 
 
 def compile_graph():
 
     # Vector Store
-    vector_store = get_pinecone_vector_store()
+    _vector_store = get_pinecone_vector_store()
     # retriever = vector_store.as_retriever(
     #     search_type="similarity",
     #     search_args={"k": 4}
     # )
-    retriever = Retriever(vector_store=vector_store)
+    retriever = Retriever(vector_store=_vector_store)
 
     # LLM
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=settings.OPENAI_API_KEY)

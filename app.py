@@ -14,7 +14,7 @@ def main():
 
     # Set page configuration
     st.set_page_config(
-        page_title="Document Management System",
+        page_title="MeetPro Insights",
         layout="wide",
         initial_sidebar_state="expanded",
     )
@@ -52,15 +52,10 @@ def main():
     )
 
     # Initialize session states
-    if "current_view" not in st.session_state:
-        st.session_state.current_view = "document_list"
-    if "selected_document" not in st.session_state:
-        st.session_state.selected_document = None
-    if "summaries" not in st.session_state:
-        st.session_state.summaries = {}
-
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
+    st.session_state.transcription = None
+    st.session_state.chat_history = []
 
     def logout():
         if st.button("Logout"):
@@ -79,7 +74,7 @@ def main():
     if st.session_state.logged_in:
         pg = st.navigation(
             {
-                "Question Answering & Reports": [qa_page],
+                # "Question Answering & Reports": [qa_page],
                 "Transcribe Audio": [transcribe_page],
                 "Logout": [logout_page],
             }
@@ -91,8 +86,7 @@ def main():
                 "User Creation": [user_creation_page],
             }
         )
-    st.session_state.messages = []
-    ensure_resource_dir_exists()
+
     pg.run()
 
 
